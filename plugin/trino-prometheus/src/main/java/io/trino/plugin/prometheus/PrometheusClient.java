@@ -41,6 +41,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import static com.google.common.base.Verify.verify;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static io.trino.plugin.prometheus.PrometheusErrorCode.PROMETHEUS_TABLES_METRICS_RETRIEVE_ERROR;
 import static io.trino.plugin.prometheus.PrometheusErrorCode.PROMETHEUS_UNKNOWN_ERROR;
@@ -50,6 +51,7 @@ import static io.trino.spi.type.TypeSignature.mapType;
 import static io.trino.spi.type.VarcharType.VARCHAR;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.readString;
+import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -61,6 +63,7 @@ public class PrometheusClient
     private final OkHttpClient httpClient;
     private final Supplier<Map<String, Object>> tableSupplier;
     private final Type varcharMapType;
+    private final boolean caseInsensitiveNameMatching;
 
     @Inject
     public PrometheusClient(PrometheusConnectorConfig config, JsonCodec<Map<String, Object>> metricCodec, TypeManager typeManager)
@@ -80,6 +83,7 @@ public class PrometheusClient
                 config.getCacheDuration().toMillis(),
                 MILLISECONDS);
         varcharMapType = typeManager.getType(mapType(VARCHAR.getTypeSignature(), VARCHAR.getTypeSignature()));
+        this.caseInsensitiveNameMatching = config.isCaseInsensitiveNameMatching();
     }
 
     private static URI getPrometheusMetricsURI(URI prometheusUri)
@@ -118,15 +122,32 @@ public class PrometheusClient
         if (tableNames == null) {
             return null;
         }
-        if (!tableNames.contains(tableName)) {
+
+        String remoteTableName = toRemoteTableName(tableName);
+        if (!tableNames.contains(remoteTableName)) {
             return null;
         }
+
         return new PrometheusTable(
-                tableName,
+                remoteTableName,
                 ImmutableList.of(
                         new PrometheusColumn("labels", varcharMapType),
                         new PrometheusColumn("timestamp", TIMESTAMP_COLUMN_TYPE),
                         new PrometheusColumn("value", DoubleType.DOUBLE)));
+    }
+
+    private String toRemoteTableName(String tableName)
+    {
+        verify(tableName.equals(tableName.toLowerCase(ENGLISH)), "tableName not in lower-case: %s", tableName);
+        if (!caseInsensitiveNameMatching) {
+            return tableName;
+        }
+        for (String remoteTableName : (List<String>) tableSupplier.get().get("data")) {
+            if (tableName.equals(remoteTableName.toLowerCase(ENGLISH))) {
+                return remoteTableName;
+            }
+        }
+        return tableName;
     }
 
     private Map<String, Object> fetchMetrics(JsonCodec<Map<String, Object>> metricsCodec, URI metadataUri)
