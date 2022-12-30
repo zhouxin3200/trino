@@ -32,7 +32,7 @@ import io.trino.plugin.elasticsearch.decoders.ArrayDecoder;
 import io.trino.plugin.elasticsearch.decoders.BigintDecoder;
 import io.trino.plugin.elasticsearch.decoders.BooleanDecoder;
 import io.trino.plugin.elasticsearch.decoders.DoubleDecoder;
-import io.trino.plugin.elasticsearch.decoders.GeopointDecoder;
+import io.trino.plugin.elasticsearch.decoders.GeoPointDecoder;
 import io.trino.plugin.elasticsearch.decoders.IntegerDecoder;
 import io.trino.plugin.elasticsearch.decoders.IpAddressDecoder;
 import io.trino.plugin.elasticsearch.decoders.RawJsonDecoder;
@@ -350,7 +350,7 @@ public class ElasticsearchMetadata
                 case "keyword":
                     return new TypeAndDecoder(VARCHAR, new VarcharDecoder.Descriptor(path));
                 case "geo_point":
-                    return new TypeAndDecoder(VARCHAR, new GeopointDecoder.Descriptor(path));
+                    return new TypeAndDecoder(VARCHAR, new GeoPointDecoder.Descriptor(path));
                 case "ip":
                     return new TypeAndDecoder(ipAddressType, new IpAddressDecoder.Descriptor(path, ipAddressType));
                 case "boolean":

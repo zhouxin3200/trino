@@ -32,12 +32,12 @@ import static io.trino.spi.type.VarcharType.VARCHAR;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
-public class GeopointDecoder
+public class GeoPointDecoder
         implements Decoder
 {
     private final String path;
 
-    public GeopointDecoder(String path)
+    public GeoPointDecoder(String path)
     {
         this.path = requireNonNull(path, "path is null");
     }
@@ -57,13 +57,13 @@ public class GeopointDecoder
             for (Object o : (List<?>) value) {
                 valueArrayList.add(Double.class.cast(o));
             }
-            String changeArrayValueToString = "" + valueArrayList.get(0) + "," + valueArrayList.get(1);
+            String changeArrayValueToString = valueArrayList.get(0) + "," + valueArrayList.get(1);
             VARCHAR.writeSlice(output, Slices.utf8Slice(changeArrayValueToString.toString()));
         }
         else if (value instanceof Object) {
             ObjectMapper oMapper = new ObjectMapper();
             Map<String, Object> mapValue = oMapper.convertValue(value, Map.class);
-            String changeObjectValueToString = "" + mapValue.get("lat") + "," + mapValue.get("lon");
+            String changeObjectValueToString = mapValue.get("lat") + "," + mapValue.get("lon");
             VARCHAR.writeSlice(output, Slices.utf8Slice(changeObjectValueToString.toString()));
         }
         else {
@@ -91,7 +91,7 @@ public class GeopointDecoder
         @Override
         public Decoder createDecoder()
         {
-            return new GeopointDecoder(path);
+            return new GeoPointDecoder(path);
         }
     }
 }
